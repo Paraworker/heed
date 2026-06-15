@@ -279,6 +279,14 @@ pub struct RwTxn<'p> {
 
 impl<'p> RwTxn<'p> {
     pub(crate) fn new<T>(env: &'p Env<T>) -> Result<RwTxn<'p>> {
+        Self::begin(Cow::Borrowed(&env.inner))
+    }
+
+    pub(crate) fn static_write_txn<T>(env: Env<T>) -> Result<RwTxn<'static>> {
+        Self::begin(Cow::Owned(env.inner))
+    }
+
+    fn begin(env: Cow<'_, Arc<EnvInner>>) -> Result<RwTxn<'_>> {
         let mut txn: *mut ffi::MDB_txn = ptr::null_mut();
 
         unsafe {
@@ -292,7 +300,7 @@ impl<'p> RwTxn<'p> {
 
         Ok(RwTxn {
             txn: RoTxn {
-                inner: RoTxnInner { txn: NonNull::new(txn), env: Cow::Borrowed(&env.inner) },
+                inner: RoTxnInner { txn: NonNull::new(txn), env },
                 _tls_marker: PhantomData,
             },
         })

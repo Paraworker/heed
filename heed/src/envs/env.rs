@@ -374,6 +374,8 @@ impl<T> Env<T> {
 
     /// Create a transaction with read and write access for use with the environment.
     ///
+    /// See [`Self::static_write_txn`] if you want the txn to own the environment.
+    ///
     /// ## LMDB Limitations
     ///
     /// Only one [`RwTxn`] may exist simultaneously in the current environment.
@@ -382,6 +384,20 @@ impl<T> Env<T> {
     /// transaction.
     pub fn write_txn(&self) -> Result<RwTxn<'_>> {
         RwTxn::new(self)
+    }
+
+    /// Create a transaction with read and write access for use with the environment.
+    /// Contrary to [`Self::write_txn`], this version **owns** the environment, which
+    /// means you won't be able to close the environment while this transaction is alive.
+    ///
+    /// ## LMDB Limitations
+    ///
+    /// Only one [`RwTxn`] may exist simultaneously in the current environment.
+    /// If another write transaction is initiated, while another write transaction exists
+    /// the thread initiating the new one will wait on a mutex upon completion of the previous
+    /// transaction.
+    pub fn static_write_txn(self) -> Result<RwTxn<'static>> {
+        RwTxn::static_write_txn(self)
     }
 
     /// Create a nested transaction with read and write access for use with the environment.
